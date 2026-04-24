@@ -6,7 +6,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN pip install --no-cache-dir -r backend/requirements.txt
+RUN pip install --no-cache-dir fastapi==0.110.0 uvicorn==0.29.0 PyJWT==2.8.0 bcrypt==4.1.2 pydantic==2.6.4 python-multipart==0.0.9
 
 RUN mkdir -p database
 
