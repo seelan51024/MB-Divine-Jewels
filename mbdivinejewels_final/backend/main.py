@@ -25,7 +25,8 @@ security   = HTTPBearer()
 def startup(): init_db()
 
 frontend_path = Path(__file__).parent.parent / "frontend"
-app.mount("/static", StaticFiles(directory=str(frontend_path)), name="static")
+if frontend_path.exists():
+    app.mount("/static", StaticFiles(directory=str(frontend_path)), name="static")
 
 @app.get("/")
 def serve_index(): return FileResponse(str(frontend_path / "index.html"))
