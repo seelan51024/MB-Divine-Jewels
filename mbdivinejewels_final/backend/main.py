@@ -12,8 +12,8 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from backend.models import LoginRequest, ProductCreate, ProductUpdate, OrderCreate, CustomerOrderCreate, TokenResponse, UpdateStatusRequest, PaymentSettings, StoreSettings, StorySection, TestimonialsSection, GallerySection, ChangePasswordRequest
-from backend.database import get_db, init_db
+from models import LoginRequest, ProductCreate, ProductUpdate, OrderCreate, CustomerOrderCreate, TokenResponse, UpdateStatusRequest, PaymentSettings, StoreSettings, StorySection, TestimonialsSection, GallerySection, ChangePasswordRequest
+from database import get_db, init_db
 
 app = FastAPI(title="MB Divine Jewels")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
