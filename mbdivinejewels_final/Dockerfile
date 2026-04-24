@@ -10,9 +10,6 @@ RUN pip install --no-cache-dir fastapi==0.110.0 uvicorn==0.29.0 PyJWT==2.8.0 bcr
 
 RUN mkdir -p database
 
-# Create a startup script
-RUN echo '#!/bin/bash\ncd /app\nPYTHONPATH=/app uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}' > /start.sh && chmod +x /start.sh
-
 EXPOSE 8000
 
-CMD ["/start.sh"]
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --app-dir /app/backend
