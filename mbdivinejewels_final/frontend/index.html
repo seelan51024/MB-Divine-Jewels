@@ -1079,6 +1079,7 @@ async function load() {
   }
   if (co) customerOrders = co;
   updateOnlineBadge();
+  loadDashboardStats();
 }
 
 function updateOnlineBadge() {
@@ -2519,12 +2520,7 @@ function drawRevenueChart(posData, onlData){
   });
 }
 
-// Call on tab switch
-var _origLoad = load;
-async function load(){
-  await _origLoad();
-  loadDashboardStats();
-}
+// Dashboard stats loaded inside main load() function
 
 </script>
 </body>
