@@ -853,8 +853,11 @@ async function loadProducts(){
     buildCats();buildNav();buildFootCats();renderProds();
     // Hero bg slideshow
     var heroImgs=products.filter(function(p){return p.photo;}).map(function(p){return p.photo;});
-    var customHeroImg=window._storeSettings&&window._storeSettings.heroImage||null;
-    var allHeroImgs=customHeroImg?[customHeroImg].concat(heroImgs):heroImgs;
+    // heroImages array (multi) → fallback to single heroImage → fallback to product photos
+    var customHeroImgs=(window._storeSettings&&window._storeSettings.heroImages&&window._storeSettings.heroImages.length>0)
+      ? window._storeSettings.heroImages
+      : (window._storeSettings&&window._storeSettings.heroImage ? [window._storeSettings.heroImage] : []);
+    var allHeroImgs=customHeroImgs.length>0 ? customHeroImgs : heroImgs;
     if(allHeroImgs.length>0){
       var eyebrow=window._storeSettings&&window._storeSettings.heroEyebrow||'Welcome to MB Divine Jewels';
       var title=window._storeSettings&&window._storeSettings.heroTitle?window._storeSettings.heroTitle.replace(/\\n/g,'<br>'):'Jewellery That<br>Feels Like You';
