@@ -798,15 +798,14 @@ html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg-page);c
           <div class="order-card" style="margin-bottom:16px;">
             <div style="font-size:13px;font-weight:700;margin-bottom:14px;color:var(--lav-700);">🖼️ Hero Section</div>
 
-            <!-- Hero Image Upload -->
+            <!-- Hero Multi-Image Upload (same style as product photos) -->
             <div style="margin-bottom:14px;">
-              <label style="font-size:11px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:6px;">Hero Background Photo</label>
-              <div id="heroImgArea" onclick="document.getElementById('heroImgInput').click()" style="border:2px dashed var(--lav-300);border-radius:10px;padding:14px;text-align:center;cursor:pointer;background:var(--bg2);position:relative;min-height:90px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;">
-                <img id="heroImgPreview" src="" alt="" style="display:none;max-height:120px;width:100%;object-fit:cover;border-radius:6px;"/>
-                <div id="heroImgTxt" style="font-size:11px;color:var(--text-muted);">📷 Tap to upload hero photo<br><span style="font-size:10px;opacity:.7;">Recommended: wide landscape image</span></div>
-                <button id="heroImgClear" onclick="event.stopPropagation();clearHeroImg()" style="display:none;position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;line-height:1;">✕</button>
+              <div class="modal-lbl" style="margin-bottom:6px;">Hero Photos (up to 5 — first shown first)</div>
+              <div id="heroImgGrid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:8px;"></div>
+              <div class="photo-upload" id="heroUploadArea" style="height:60px;position:relative;" onclick="document.getElementById('heroImgInput').click()">
+                <input type="file" id="heroImgInput" accept="image/*" multiple style="display:none;" onclick="event.stopPropagation()"/>
+                <div id="heroImgTxt" class="pu-txt"><div class="pu-icon">🖼️</div><div style="font-size:11px;">Tap to add hero photos (multiple)</div></div>
               </div>
-              <input type="file" id="heroImgInput" accept="image/*" style="display:none;"/>
             </div>
 
             <div style="margin-bottom:12px;">
@@ -2111,14 +2110,14 @@ async function loadStoreSettingsForm(){
       var el=document.getElementById(kv[0]);
       if(el&&_storeSets[kv[1]]!==undefined)el.value=_storeSets[kv[1]];
     });
-  // Load hero image preview
-    if(_storeSets.heroImage){
-      _heroImgData=_storeSets.heroImage;
-      document.getElementById('heroImgPreview').src=_heroImgData;
-      document.getElementById('heroImgPreview').style.display='block';
-      document.getElementById('heroImgTxt').style.display='none';
-      document.getElementById('heroImgClear').style.display='flex';
+  // Load hero images
+    _heroImages = [];
+    if(_storeSets.heroImages && Array.isArray(_storeSets.heroImages)){
+      _heroImages = _storeSets.heroImages;
+    } else if(_storeSets.heroImage){
+      _heroImages = [_storeSets.heroImage]; // migrate single → array
     }
+    renderHeroImgGrid();
   }catch(e){console.warn('loadStoreSettingsForm error',e);}
 }
 async function saveStoreSettings(){
@@ -2144,42 +2143,70 @@ async function saveStoreSettings(){
     refundPolicy:document.getElementById('st-refund').value.trim(),
     privacyPolicy:document.getElementById('st-priv').value.trim()
   };
-  if(_heroImgData) body.heroImage = _heroImgData;
+  body.heroImages = _heroImages; // array of base64 images
   try{
     await api('POST','/api/store-settings',body);
     showToast('✅ Store settings saved! Customer page updates live.');
   }catch(e){showToast('❌ Failed to save store settings');}
 }
 
-// ── HERO IMAGE UPLOAD ──
-var _heroImgData = null;
+// ── HERO MULTI-IMAGE UPLOAD ──
+var _heroImages = []; // array of base64 strings, max 5
 
-document.addEventListener('DOMContentLoaded',function(){
+function renderHeroImgGrid() {
+  var grid = document.getElementById('heroImgGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  _heroImages.forEach(function(src, idx) {
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;border:' + (idx===0?'2px solid var(--lav-600)':'1px solid var(--border-mid)');
+    if(idx === 0) wrap.title = 'First slide';
+    wrap.innerHTML =
+      '<img src="'+src+'" style="width:100%;height:100%;object-fit:cover;" alt="hero '+idx+'"/>'+
+      '<button onclick="removeHeroImg('+idx+',event)" style="position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;border:none;background:rgba(0,0,0,.6);color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">✕</button>'+
+      (idx>0?'<button onclick="moveHeroFirst('+idx+',event)" style="position:absolute;bottom:3px;left:3px;font-size:9px;background:var(--lav-600);color:#fff;border:none;border-radius:3px;padding:1px 5px;cursor:pointer;">First</button>':'<span style="position:absolute;bottom:3px;left:3px;font-size:9px;background:var(--lav-600);color:#fff;border-radius:3px;padding:1px 5px;">First</span>');
+    grid.appendChild(wrap);
+  });
+  var txt = document.getElementById('heroImgTxt');
+  if(txt) txt.querySelector('div:last-child').textContent = _heroImages.length >= 5 ? 'Max 5 photos reached' : 'Add more photos (' + (5 - _heroImages.length) + ' left)';
+}
+
+function removeHeroImg(idx, e) {
+  e.stopPropagation();
+  _heroImages.splice(idx, 1);
+  renderHeroImgGrid();
+}
+
+function moveHeroFirst(idx, e) {
+  e.stopPropagation();
+  var photo = _heroImages.splice(idx, 1)[0];
+  _heroImages.unshift(photo);
+  renderHeroImgGrid();
+}
+
+document.addEventListener('DOMContentLoaded', function(){
   var heroInput = document.getElementById('heroImgInput');
   if(heroInput){
     heroInput.onchange = function(e){
-      var f = e.target.files[0]; if(!f) return;
-      var rd = new FileReader();
-      rd.onload = function(ev){
-        _heroImgData = ev.target.result;
-        document.getElementById('heroImgPreview').src = _heroImgData;
-        document.getElementById('heroImgPreview').style.display = 'block';
-        document.getElementById('heroImgTxt').style.display = 'none';
-        document.getElementById('heroImgClear').style.display = 'flex';
-      };
-      rd.readAsDataURL(f);
+      var files = Array.from(e.target.files);
+      if(!files.length) return;
+      var remaining = 5 - _heroImages.length;
+      if(remaining <= 0){ showToast('⚠️ Maximum 5 hero photos allowed'); return; }
+      files = files.slice(0, remaining);
+      var loaded = 0;
+      files.forEach(function(file){
+        var rd = new FileReader();
+        rd.onload = function(ev){
+          _heroImages.push(ev.target.result);
+          loaded++;
+          if(loaded === files.length) renderHeroImgGrid();
+        };
+        rd.readAsDataURL(file);
+      });
+      heroInput.value = '';
     };
   }
 });
-
-function clearHeroImg(){
-  _heroImgData = null;
-  document.getElementById('heroImgPreview').src = '';
-  document.getElementById('heroImgPreview').style.display = 'none';
-  document.getElementById('heroImgTxt').style.display = 'block';
-  document.getElementById('heroImgClear').style.display = 'none';
-  document.getElementById('heroImgInput').value = '';
-}
 
 // ── STORY SECTION ADMIN ──
 var _storyData = {};
