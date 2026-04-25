@@ -1264,10 +1264,16 @@ function renderCoSummary(){
   document.getElementById('coTotal').textContent='₹'+grandTotal.toLocaleString('en-IN');
   window._currentShipFee=shipFee;
   window._currentGrandTotal=grandTotal;
+  // Live update UPI amount to pay box
+  var upiAmt=document.getElementById('upiAmountDisplay');
+  if(upiAmt) upiAmt.textContent='₹'+grandTotal.toLocaleString('en-IN');
 }
 
 function renderPaySection(){
   var tot=Object.values(cart).reduce(function(s,i){return s+i.price*i.qty;},0);
+  // Always recalculate grandTotal to pick up latest shipping fee
+  renderCoSummary();
+  var grandTotal=window._currentGrandTotal||tot;
   var s=paySettings;
   var html='';
 
@@ -1283,7 +1289,7 @@ function renderPaySection(){
         '<div class="upi-id">'+s.upi+'</div>'+
         (s.upiName?'<div class="upi-name">'+s.upiName+'</div>':'')+
         '<button class="upi-copy-btn" onclick="copyUPI(event)">📋 Copy UPI ID</button>'+
-        '<div style="font-size:11px;color:var(--textm);margin-top:10px;">Amount to pay: <strong style="color:var(--lav-700);font-size:14px;">₹'+tot.toLocaleString('en-IN')+'</strong></div>'+
+        '<div style="font-size:11px;color:var(--textm);margin-top:10px;">Amount to pay: <strong style="color:var(--lav-700);font-size:14px;" id="upiAmountDisplay">₹'+grandTotal.toLocaleString('en-IN')+'</strong></div>'+
       '</div>';
   }
 
