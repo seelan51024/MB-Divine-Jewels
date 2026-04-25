@@ -998,9 +998,10 @@ Everyday Energy" style="width:100%;resize:vertical;"></textarea>
       <div class="mf"><label class="modal-lbl">Price (Rs.) *</label><input class="modal-inp" id="mp-price" type="number" placeholder="500" min="0"/></div>
       <div class="mf"><label class="modal-lbl">Stock Qty *</label><input class="modal-inp" id="mp-stock" type="number" placeholder="10" min="0"/></div>
       <div class="mf"><label class="modal-lbl">Category</label>
-        <select class="modal-inp" id="mp-cat">
-          <option>Anti Tarnish Chains</option><option>Chokers</option><option>Earrings</option><option>Nose Pins</option><option>Second Studs</option><option>Anklets</option><option>Hand Chains</option><option>Rings</option><option>charms</option><option>plain chains</option><option>Double Layer Chains</option><option>Kadas</option><option>Chain type Bracelets</option><option>Hand Cuffs</option><option>Other</option>
+        <select class="modal-inp" id="mp-cat" onchange="toggleCustomCat(this)">
+          <option>Anti Tarnish Chains</option><option>Chokers</option><option>Earrings</option><option>Nose Pins</option><option>Second Studs</option><option>Anklets</option><option>Hand Chains</option><option>Rings</option><option>charms</option><option>plain chains</option><option>Double Layer Chains</option><option>Kadas</option><option>Chain type Bracelets</option><option>Hand Cuffs</option><option>Other</option><option value="__custom__">+ Add New Category…</option>
         </select>
+        <input class="modal-inp" id="mp-cat-custom" placeholder="Type new category name" style="display:none;margin-top:6px;"/>
       </div>
       <div class="mf"><label class="modal-lbl">Material</label>
         <select class="modal-inp" id="mp-mat">
@@ -1461,6 +1462,18 @@ async function delProduct(idx) {
   renderProds(); renderPosGrid(); showToast('Product deleted');
 }
 
+function toggleCustomCat(sel){
+  var customInp=document.getElementById('mp-cat-custom');
+  if(!customInp)return;
+  if(sel.value==='__custom__'){
+    customInp.style.display='block';
+    customInp.focus();
+  } else {
+    customInp.style.display='none';
+    customInp.value='';
+  }
+}
+
 function openAddModal(idx) {
   editIdx = idx;
   currentPhoto = (idx >= 0 && products[idx] && products[idx].photo) ? products[idx].photo : null;
@@ -1469,7 +1482,19 @@ function openAddModal(idx) {
   document.getElementById('mp-name').value  = p ? p.name : '';
   document.getElementById('mp-price').value = p ? p.price : '';
   document.getElementById('mp-stock').value = p !== null ? p.stock : '';
-  document.getElementById('mp-cat').value   = p ? p.cat : 'Anti Tarnish Chains';
+  // Handle category: if it's a custom cat not in the list, show custom input
+  var catSel=document.getElementById('mp-cat');
+  var catCustom=document.getElementById('mp-cat-custom');
+  var pCat=p ? p.cat : 'Anti Tarnish Chains';
+  var optVals=Array.from(catSel.options).map(function(o){return o.value;});
+  if(pCat&&optVals.indexOf(pCat)===-1&&pCat!=='__custom__'){
+    // custom category not in list — add it temporarily and select it
+    var opt=document.createElement('option');
+    opt.value=pCat;opt.textContent=pCat;
+    catSel.insertBefore(opt,catSel.options[catSel.options.length-1]);
+  }
+  catSel.value=pCat||'Anti Tarnish Chains';
+  if(catCustom){catCustom.style.display='none';catCustom.value='';}
   document.getElementById('mp-mat').value   = p ? p.mat : 'Gold plate';
   document.getElementById('mp-size').value  = p ? (p.size || '') : '';
   document.getElementById('mp-desc').value  = p ? (p.description || '') : '';
@@ -1510,9 +1535,20 @@ async function saveProduct() {
   if (isNaN(stock)) stock = 0;
   if (!name)  { showToast('⚠️ Enter a product name'); return; }
   if (!price) { showToast('⚠️ Enter a valid price');  return; }
+  var catSel=document.getElementById('mp-cat');
+  var catCustom=document.getElementById('mp-cat-custom');
+  var finalCat=catSel.value;
+  if(finalCat==='__custom__'){
+    var customVal=catCustom?catCustom.value.trim():'';
+    if(!customVal){showToast('⚠️ Enter custom category name');return;}
+    finalCat=customVal;
+    // Add to dropdown for future use this session
+    var exists=Array.from(catSel.options).some(function(o){return o.value===finalCat;});
+    if(!exists){var opt=document.createElement('option');opt.value=finalCat;opt.textContent=finalCat;catSel.insertBefore(opt,catSel.options[catSel.options.length-1]);}
+  }
   var prod = {
     name: name, price: price, stock: stock,
-    cat: document.getElementById('mp-cat').value,
+    cat: finalCat,
     mat: document.getElementById('mp-mat').value,
     size: document.getElementById('mp-size').value.trim(),
     description: document.getElementById('mp-desc') ? document.getElementById('mp-desc').value.trim() : '',
