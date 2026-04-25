@@ -853,11 +853,13 @@ async function loadProducts(){
     buildCats();buildNav();buildFootCats();renderProds();
     // Hero bg slideshow
     var heroImgs=products.filter(function(p){return p.photo;}).map(function(p){return p.photo;});
-    if(heroImgs.length>0){
+    var customHeroImg=window._storeSettings&&window._storeSettings.heroImage||null;
+    var allHeroImgs=customHeroImg?[customHeroImg].concat(heroImgs):heroImgs;
+    if(allHeroImgs.length>0){
       var eyebrow=window._storeSettings&&window._storeSettings.heroEyebrow||'Welcome to MB Divine Jewels';
       var title=window._storeSettings&&window._storeSettings.heroTitle?window._storeSettings.heroTitle.replace(/\\n/g,'<br>'):'Jewellery That<br>Feels Like You';
       var btn=window._storeSettings&&window._storeSettings.heroBtn||'Shop Collection →';
-      var slides=heroImgs.slice(0,5).map(function(src,i){
+      var slides=allHeroImgs.slice(0,5).map(function(src,i){
         return '<div class="hero-slide" style="position:absolute;inset:0;opacity:'+(i===0?'1':'0')+';transition:opacity 1s ease;background:#1a1228;"><img src="'+src+'" alt="jewellery" style="width:100%;height:100%;object-fit:cover;display:block;"/></div>';
       }).join('');
       document.getElementById('hero').innerHTML=
@@ -868,7 +870,7 @@ async function loadProducts(){
         '<div class="hero-ttl" id="heroTtl">'+title+'</div>'+
         '<button class="hero-btn" id="heroBtn" onclick="document.getElementById(\'catBar\').scrollIntoView({behavior:\'smooth\'});">'+btn+'</button></div>';
       // Auto slideshow
-      if(heroImgs.length>1){
+      if(allHeroImgs.length>1){
         var _hIdx=0;
         setInterval(function(){
           var slides=document.querySelectorAll('.hero-slide');
