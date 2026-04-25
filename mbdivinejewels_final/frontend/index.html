@@ -227,6 +227,17 @@ html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg-page);c
 .cash-inp:focus{border-color:var(--lav-500);}
 .bal-box{display:none;font-size:12px;font-weight:600;border-radius:var(--r-sm);padding:7px 10px;}
 .bal-box.show{display:block;}
+.split-panel{display:none;background:var(--lav-50);border-radius:var(--r-md);padding:12px;margin-top:10px;}
+[data-theme="dark"] .split-panel{background:rgba(124,92,225,0.08);}
+.split-panel.show{display:block;}
+.split-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+.split-label{font-size:11px;color:var(--text-muted);font-weight:600;min-width:52px;}
+.split-inp{flex:1;padding:8px 10px;border:1px solid var(--border-mid);border-radius:var(--r-md);font-size:15px;font-weight:600;font-family:'Inter',sans-serif;background:var(--bg-surface);color:var(--text-primary);outline:none;}
+.split-inp:focus{border-color:var(--lav-500);}
+.split-bal{font-size:11px;font-weight:600;border-radius:var(--r-sm);padding:6px 10px;margin-top:2px;}
+.pay-methods-wrap{margin-top:10px;}
+.pay-methods-label{font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+.pay-methods-split-label{font-size:10px;color:var(--lav-500);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;margin-top:8px;}
 .action-btns{display:flex;gap:8px;margin-top:10px;}
 .wa-btn{flex:1;padding:11px 0;background:none;border:1.5px solid #22C55E;border-radius:var(--r-md);color:#15803D;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:none;align-items:center;justify-content:center;gap:6px;transition:all .15s;}
 [data-theme="dark"] .wa-btn{color:#4ADE80;border-color:#4ADE80;}
@@ -437,9 +448,9 @@ html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg-page);c
     </div>
     <div class="err-msg" id="loginErr">Invalid credentials. Please try again.</div>
     <label class="lbl">Email Address</label>
-    <input class="inp" id="loginEmail" type="text" , value="admin@mbdivine.com" />
+    <input class="inp" id="loginEmail" type="text" />
     <label class="lbl">Password</label>
-    <input class="inp" id="loginPass" type="password", value="mbdivine123"/>
+    <input class="inp" id="loginPass" type="password"/>
     <button class="btn-primary" id="loginBtn">Sign In</button>
   </div>
 </div>
@@ -597,15 +608,37 @@ html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg-page);c
                 </div>
               </div>
               <div class="bill-total-row"><span>Total</span><span id="billTot">Rs. 0</span></div>
-              <div class="pay-methods">
-                <button class="pay-btn" id="pCash" data-pay="cash">💵 Cash</button>
-                <button class="pay-btn" id="pCard" data-pay="card">💳 Card</button>
-                <button class="pay-btn" id="pUPI" data-pay="upi">📱 UPI</button>
+              <div class="pay-methods-wrap">
+                <div class="pay-methods-label">Pay Mode</div>
+                <div class="pay-methods">
+                  <button class="pay-btn" id="pCash" data-pay="cash">💵 Cash</button>
+                  <button class="pay-btn" id="pCard" data-pay="card">💳 Card</button>
+                  <button class="pay-btn" id="pUPI" data-pay="upi">📱 GPay</button>
+                </div>
+                <div class="pay-methods-split-label">Split Payment</div>
+                <div class="pay-methods" style="gap:5px;">
+                  <button class="pay-btn" id="pSplitCashUPI" data-pay="split-cash-upi" style="font-size:10px;">💵+📱 Cash/GPay</button>
+                  <button class="pay-btn" id="pSplitCashCard" data-pay="split-cash-card" style="font-size:10px;">💵+💳 Cash/Card</button>
+                  <button class="pay-btn" id="pSplitUPICard" data-pay="split-upi-card" style="font-size:10px;">📱+💳 GPay/Card</button>
+                </div>
               </div>
+              <!-- Cash panel (single cash mode) -->
               <div class="cash-panel" id="cashPanel">
                 <div class="cash-lbl">Amount given by customer</div>
                 <input class="cash-inp" type="number" id="givenAmt" placeholder="0"/>
                 <div class="bal-box" id="balBox"></div>
+              </div>
+              <!-- Split payment panel -->
+              <div class="split-panel" id="splitPanel">
+                <div class="split-row">
+                  <div class="split-label" id="splitLbl1">💵 Cash</div>
+                  <input class="split-inp" type="number" id="splitAmt1" placeholder="0"/>
+                </div>
+                <div class="split-row">
+                  <div class="split-label" id="splitLbl2">📱 GPay</div>
+                  <input class="split-inp" type="number" id="splitAmt2" placeholder="0"/>
+                </div>
+                <div class="split-bal" id="splitBal"></div>
               </div>
               <div class="action-btns">
                 <button class="wa-btn" id="waBillBtn">
@@ -1681,21 +1714,85 @@ document.querySelectorAll('.pay-btn').forEach(function(btn) {
   btn.addEventListener('click', function() { setPay(this.getAttribute('data-pay')); });
 });
 
+var SPLIT_CONFIGS = {
+  'split-cash-upi':  { lbl1: '💵 Cash', lbl2: '📱 GPay',  id: 'pSplitCashUPI'  },
+  'split-cash-card': { lbl1: '💵 Cash', lbl2: '💳 Card',  id: 'pSplitCashCard' },
+  'split-upi-card':  { lbl1: '📱 GPay', lbl2: '💳 Card',  id: 'pSplitUPICard'  }
+};
+
+function isSplit(m) { return m && m.indexOf('split-') === 0; }
+
 function setPay(m) {
   payMode = m;
   document.querySelectorAll('.pay-btn').forEach(function(b) { b.classList.remove('sel'); });
-  document.getElementById(m==='cash'?'pCash':m==='card'?'pCard':'pUPI').classList.add('sel');
+  var btnMap = { cash:'pCash', card:'pCard', upi:'pUPI', 'split-cash-upi':'pSplitCashUPI', 'split-cash-card':'pSplitCashCard', 'split-upi-card':'pSplitUPICard' };
+  if (btnMap[m]) document.getElementById(btnMap[m]).classList.add('sel');
+  // Show/hide panels
   document.getElementById('cashPanel').classList.toggle('show', m === 'cash');
   document.getElementById('balBox').classList.remove('show');
+  document.getElementById('splitPanel').classList.toggle('show', isSplit(m));
+  // Update split labels
+  if (isSplit(m)) {
+    var cfg = SPLIT_CONFIGS[m];
+    document.getElementById('splitLbl1').textContent = cfg.lbl1;
+    document.getElementById('splitLbl2').textContent = cfg.lbl2;
+    document.getElementById('splitAmt1').value = '';
+    document.getElementById('splitAmt2').value = '';
+    document.getElementById('splitBal').textContent = '';
+    document.getElementById('splitBal').style.display = 'none';
+    // Pre-fill first field with total
+    document.getElementById('splitAmt1').placeholder = 'e.g. ' + Math.floor(posTotal / 2);
+    document.getElementById('splitAmt2').placeholder = 'Remaining';
+  }
   updateCharge();
 }
+
+function updateSplitBal() {
+  var a1 = parseFloat(document.getElementById('splitAmt1').value) || 0;
+  var a2 = parseFloat(document.getElementById('splitAmt2').value) || 0;
+  var bal = document.getElementById('splitBal');
+  if (!isSplit(payMode)) return;
+  if (a1 > 0 || a2 > 0) {
+    var sum = a1 + a2;
+    bal.style.display = 'block';
+    if (Math.round(sum) === Math.round(posTotal)) {
+      bal.textContent = '✅ Exact — Rs. ' + sum.toLocaleString('en-IN');
+      bal.style.background = 'var(--green-bg)'; bal.style.color = 'var(--green)';
+    } else if (sum > posTotal) {
+      bal.textContent = 'Return: Rs. ' + (sum - posTotal).toLocaleString('en-IN');
+      bal.style.background = 'var(--green-bg)'; bal.style.color = 'var(--green)';
+    } else {
+      bal.textContent = 'Short by Rs. ' + (posTotal - sum).toLocaleString('en-IN');
+      bal.style.background = 'var(--red-bg)'; bal.style.color = 'var(--red)';
+    }
+  } else {
+    bal.style.display = 'none';
+  }
+}
+
+// Auto-fill second split field when first is entered
+document.getElementById('splitAmt1').addEventListener('input', function() {
+  var a1 = parseFloat(this.value) || 0;
+  if (a1 > 0 && a1 <= posTotal) {
+    document.getElementById('splitAmt2').value = Math.max(0, posTotal - a1) || '';
+  }
+  updateSplitBal();
+});
+document.getElementById('splitAmt2').addEventListener('input', function() {
+  updateSplitBal();
+});
 
 function updateCharge() {
   var cb = document.getElementById('chargeBtn');
   var wb = document.getElementById('waBillBtn');
-  if (payMode && posTotal > 0) {
-    cb.classList.add('show'); wb.classList.add('show');
-    cb.textContent = 'Collect Rs. ' + posTotal.toLocaleString('en-IN');
+  var ready = payMode && posTotal > 0;
+  if (cb.classList.contains('show') || ready) {
+    if (ready) {
+      cb.classList.add('show'); wb.classList.add('show');
+      cb.textContent = 'Collect Rs. ' + posTotal.toLocaleString('en-IN');
+    } else {
+      cb.classList.remove('show'); wb.classList.remove('show');
+    }
   } else {
     cb.classList.remove('show'); wb.classList.remove('show');
   }
@@ -1724,11 +1821,18 @@ document.getElementById('chargeBtn').addEventListener('click', async function() 
   var h   = now.getHours(), m = now.getMinutes();
   var t   = (h % 12 || 12) + ':' + (m < 10 ? '0' : '') + m + (h < 12 ? ' AM' : ' PM');
   var itemList = Object.values(cart).filter(function(i) { return i.qty > 0; });
+  var payLabel = payMode.toUpperCase();
+  if (isSplit(payMode)) {
+    var cfg = SPLIT_CONFIGS[payMode];
+    var a1 = parseFloat(document.getElementById('splitAmt1').value) || 0;
+    var a2 = parseFloat(document.getElementById('splitAmt2').value) || 0;
+    payLabel = cfg.lbl1 + ' Rs.' + a1.toLocaleString('en-IN') + ' + ' + cfg.lbl2 + ' Rs.' + a2.toLocaleString('en-IN');
+  }
   var ord = {
     id:    '#DJ-' + String(orderNum).padStart(4, '0'),
     items: itemList.map(function(i) { return i.name + ' ×' + i.qty; }),
     total: posTotal,
-    pay:   payMode.toUpperCase(),
+    pay:   payLabel,
     time:  t
   };
   // Build cart with product DB ids for stock update
@@ -1755,6 +1859,10 @@ function resetBill() {
   document.getElementById('billBot').style.display = 'none';
   document.getElementById('cashPanel').classList.remove('show');
   document.getElementById('balBox').classList.remove('show');
+  document.getElementById('splitPanel').classList.remove('show');
+  document.getElementById('splitAmt1').value = '';
+  document.getElementById('splitAmt2').value = '';
+  document.getElementById('splitBal').style.display = 'none';
   document.querySelectorAll('.pay-btn').forEach(function(b) { b.classList.remove('sel'); });
   document.getElementById('givenAmt').value = '';
   var dp = document.getElementById('discountPct'); if(dp) dp.value='';
@@ -1794,7 +1902,16 @@ function buildBillMsg() {
     lines.push('Discount ('+pct+'%): − Rs. '+disc.toLocaleString('en-IN'));
   }
   lines.push('*Total: Rs. '+posTotal.toLocaleString('en-IN')+'*');
-  if(payMode) lines.push('Payment: '+payMode.toUpperCase());
+  if(payMode) {
+    if(isSplit(payMode)) {
+      var cfg2 = SPLIT_CONFIGS[payMode];
+      var sa1 = parseFloat(document.getElementById('splitAmt1').value) || 0;
+      var sa2 = parseFloat(document.getElementById('splitAmt2').value) || 0;
+      lines.push('Payment: ' + cfg2.lbl1 + ' Rs.' + sa1.toLocaleString('en-IN') + ' + ' + cfg2.lbl2 + ' Rs.' + sa2.toLocaleString('en-IN'));
+    } else {
+      lines.push('Payment: '+payMode.toUpperCase());
+    }
+  }
   lines.push('');
   lines.push('Thank you for shopping! 🛍️');
   lines.push('📸 https://instagram.com/mb_divine_jewels_');
