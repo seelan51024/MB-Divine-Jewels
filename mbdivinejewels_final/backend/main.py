@@ -73,8 +73,25 @@ def public_order(body: CustomerOrderCreate, db=Depends(get_db)):
          body.shipping_fee or 0, body.payment_method or "upi",
          body.payment_proof, body.payment_txn_id or "", body.time)
     )
+    # Reduce stock immediately on order placement
+    for item in body.items:
+        pid = item.get("id")
+        qty = item.get("qty", 1)
+        if pid:
+            db.execute("UPDATE products SET stock=MAX(0,stock-?) WHERE id=?", (qty, int(pid)))
     db.commit()
     return {"success": True, "order_id": oid}
+
+# ── PUBLIC: Customer's own orders by phone ──
+@app.get("/api/public/my-orders")
+def get_my_orders(phone: str, db=Depends(get_db)):
+    if not phone or len(phone.strip()) < 10:
+        raise HTTPException(400, "Invalid phone number")
+    rows = db.execute(
+        "SELECT * FROM customer_orders WHERE customer_phone=? ORDER BY id DESC",
+        (phone.strip(),)
+    ).fetchall()
+    return [dict(r, items=json.loads(r["items"])) for r in rows]
 
 # ── PRODUCTS (admin) ──
 @app.get("/api/products")
@@ -171,14 +188,7 @@ def get_customer_orders(user=Depends(verify_token), db=Depends(get_db)):
 def update_status(order_id: str, body: UpdateStatusRequest, user=Depends(verify_token), db=Depends(get_db)):
     row = db.execute("SELECT * FROM customer_orders WHERE order_id=?", (order_id,)).fetchone()
     if not row: raise HTTPException(404, "Order not found")
-    # Reduce stock only on delivery
-    if body.new_status == "completed" and row["status"] != "completed":
-        items = json.loads(row["items"])
-        for item in items:
-            pid = item.get("id")
-            qty = item.get("qty", 1)
-            if pid:
-                db.execute("UPDATE products SET stock=MAX(0,stock-?) WHERE id=?", (qty, int(pid)))
+    # Stock is already reduced at order placement — no double reduction here
     db.execute("UPDATE customer_orders SET status=? WHERE order_id=?", (body.new_status, order_id))
     db.commit()
     return {"success": True}
