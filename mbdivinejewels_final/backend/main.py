@@ -28,11 +28,14 @@ frontend_path = Path(__file__).parent.parent / "frontend"
 if frontend_path.exists():
     app.mount("/static", StaticFiles(directory=str(frontend_path)), name="static")
 
-@app.get("/admin")
-def serve_index(): return FileResponse(str(frontend_path / "index.html"))
-
 @app.get("/")
+def serve_root(): return FileResponse(str(frontend_path / "customer.html"))
+
+@app.get("/shop")
 def serve_shop(): return FileResponse(str(frontend_path / "customer.html"))
+
+@app.get("/admin")
+def serve_admin(): return FileResponse(str(frontend_path / "index.html"))
 
 # ── AUTH ──
 def mk_token(email):
