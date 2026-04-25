@@ -75,6 +75,8 @@ class StoreSettings(BaseModel):
     heroEyebrow: Optional[str] = ""
     heroTitle: Optional[str] = ""
     heroBtn: Optional[str] = "Shop Collection →"
+    heroImages: Optional[list] = []      # list of base64 image strings (up to 5)
+    heroImage: Optional[str] = None      # legacy single image (kept for backward compat)
     feat1Title: Optional[str] = "Free Delivery"
     feat1Sub: Optional[str] = "Pan India"
     feat2Title: Optional[str] = "Secure Payment"
