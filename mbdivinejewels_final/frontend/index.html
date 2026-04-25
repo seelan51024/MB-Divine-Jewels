@@ -437,11 +437,10 @@ html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg-page);c
     </div>
     <div class="err-msg" id="loginErr">Invalid credentials. Please try again.</div>
     <label class="lbl">Email Address</label>
-    <input class="inp" id="loginEmail" type="text" placeholder="admin@mbdivine.com" value="admin@mbdivine.com"/>
+    <input class="inp" id="loginEmail" type="text" />
     <label class="lbl">Password</label>
-    <input class="inp" id="loginPass" type="password" placeholder="••••••••" value="divine123"/>
+    <input class="inp" id="loginPass" type="password"/>
     <button class="btn-primary" id="loginBtn">Sign In</button>
-    <div class="demo-hint">Login: admin@mbdivine.com / divine123</div>
   </div>
 </div>
 
@@ -476,7 +475,7 @@ html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg-page);c
       </a>
       <button class="sb-item" data-tab="payment">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-        Payment Settings
+        Settings
       </button>
     </nav>
     <button type="button" class="desk-add-btn" id="deskAddBtn" onclick="openAddModal(-1)">+ Add Product</button>
@@ -506,7 +505,7 @@ html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg-page);c
     <div class="pages">
       <!-- DASHBOARD -->
       <div class="pg active" id="pg-dash">
-        <div class="dash-greet" id="dashGreet">Good morning ✨</div>
+        <div class="dash-greet" id="dashGreet">Welcome back, Admin!</div>
         <div class="dash-sub" id="dashSub">Here's your store overview</div>
 
         <!-- ALERT BANNERS -->
@@ -521,18 +520,18 @@ html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg-page);c
             <div class="prog-bg"><div class="prog-fill" id="d-bar" style="width:0%"></div></div>
           </div>
           <div class="mc"><div class="mc-lbl">Today's Orders</div><div class="mc-val" id="d-ord">0</div><div class="mc-sub" id="d-ord-sub">0 POS · 0 online</div></div>
-          <div class="mc"><div class="mc-lbl">Total Products</div><div class="mc-val" id="d-tot-prod">0</div><div class="mc-sub" id="d-stock-sub">0 units in stock</div></div>
+          <div class="mc"><div class="mc-lbl">Total Products</div><div class="mc-val" id="d-tot-prod">0</div><div class="mc-sub" id="d-stock-sub">0 units in stock</div><div class="mc-sub" id="d-tot-stock" style="display:none;">0</div></div>
           <div class="mc" style="position:relative;">
             <div class="mc-lbl">Pending Online</div>
             <div class="mc-val" id="d-pending" style="color:var(--lav-600);">0</div>
             <div class="mc-sub">New orders to confirm</div>
           </div>
-          <div class="mc"><div class="mc-lbl">All-Time Revenue</div><div class="mc-val" id="d-alltime">Rs. 0</div><div class="mc-sub">Total earnings</div></div>
+          <div class="mc"><div class="mc-lbl">All-Time Revenue</div><div class="mc-val" id="d-alltime">Rs. 0</div><div class="mc-sub">Total earnings</div><div class="mc-sub" id="d-avg" style="display:none;">Rs. 0</div></div>
         </div>
 
         <!-- REVENUE CHART -->
         <div class="sec-title" style="margin-top:20px;display:flex;justify-content:space-between;align-items:center;">
-          <span>7-Day Revenue</span>
+          <span>4-Day Revenue</span>
           <div style="display:flex;gap:12px;font-size:10px;font-weight:600;">
             <span style="color:var(--lav-600);">■ POS</span>
             <span style="color:#10B981;">■ Online</span>
@@ -540,7 +539,7 @@ html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg-page);c
         </div>
         <div class="order-card" style="padding:16px 12px 8px;margin-bottom:16px;overflow:hidden;">
           <canvas id="revenueChart" style="width:100%;height:120px;display:block;"></canvas>
-          <div id="chartEmpty" style="text-align:center;font-size:12px;color:var(--text-muted);padding:20px 0;display:none;">No sales data yet for last 7 days</div>
+          <div id="chartEmpty" style="text-align:center;font-size:12px;color:var(--text-muted);padding:20px 0;display:none;">No sales data yet for last 4 days</div>
         </div>
 
         <!-- LOW STOCK ALERT LIST -->
@@ -798,6 +797,18 @@ html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg-page);c
 
           <div class="order-card" style="margin-bottom:16px;">
             <div style="font-size:13px;font-weight:700;margin-bottom:14px;color:var(--lav-700);">🖼️ Hero Section</div>
+
+            <!-- Hero Image Upload -->
+            <div style="margin-bottom:14px;">
+              <label style="font-size:11px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:6px;">Hero Background Photo</label>
+              <div id="heroImgArea" onclick="document.getElementById('heroImgInput').click()" style="border:2px dashed var(--lav-300);border-radius:10px;padding:14px;text-align:center;cursor:pointer;background:var(--bg2);position:relative;min-height:90px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;">
+                <img id="heroImgPreview" src="" alt="" style="display:none;max-height:120px;width:100%;object-fit:cover;border-radius:6px;"/>
+                <div id="heroImgTxt" style="font-size:11px;color:var(--text-muted);">📷 Tap to upload hero photo<br><span style="font-size:10px;opacity:.7;">Recommended: wide landscape image</span></div>
+                <button id="heroImgClear" onclick="event.stopPropagation();clearHeroImg()" style="display:none;position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;line-height:1;">✕</button>
+              </div>
+              <input type="file" id="heroImgInput" accept="image/*" style="display:none;"/>
+            </div>
+
             <div style="margin-bottom:12px;">
               <label style="font-size:11px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:4px;">Eyebrow Text (small top text)</label>
               <input id="st-hero-ey" class="modal-inp" placeholder="e.g. Welcome to MB Divine Jewels ✦ Made For You" style="width:100%;"/>
@@ -1174,8 +1185,15 @@ document.querySelectorAll('[data-tab]').forEach(function(btn) {
 
 function updateGreet() {
   var h = new Date().getHours();
-  document.getElementById('dashGreet').textContent =
-    h < 12 ? 'Good morning ✨' : h < 17 ? 'Good afternoon ☀️' : 'Good evening 🌙';
+  var greeting = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  var emoji = h < 12 ? '✨' : h < 17 ? '☀️' : '🌙';
+  try {
+    var s = JSON.parse(localStorage.getItem('mbdj_admin_profile') || '{}');
+    var name = s.storeName || 'Admin';
+    document.getElementById('dashGreet').textContent = greeting + ', ' + name + ' ' + emoji;
+  } catch(e) {
+    document.getElementById('dashGreet').textContent = greeting + ' ' + emoji;
+  }
 }
 
 // ── MULTI PHOTO UPLOAD ──
@@ -2093,6 +2111,14 @@ async function loadStoreSettingsForm(){
       var el=document.getElementById(kv[0]);
       if(el&&_storeSets[kv[1]]!==undefined)el.value=_storeSets[kv[1]];
     });
+  // Load hero image preview
+    if(_storeSets.heroImage){
+      _heroImgData=_storeSets.heroImage;
+      document.getElementById('heroImgPreview').src=_heroImgData;
+      document.getElementById('heroImgPreview').style.display='block';
+      document.getElementById('heroImgTxt').style.display='none';
+      document.getElementById('heroImgClear').style.display='flex';
+    }
   }catch(e){console.warn('loadStoreSettingsForm error',e);}
 }
 async function saveStoreSettings(){
@@ -2118,10 +2144,41 @@ async function saveStoreSettings(){
     refundPolicy:document.getElementById('st-refund').value.trim(),
     privacyPolicy:document.getElementById('st-priv').value.trim()
   };
+  if(_heroImgData) body.heroImage = _heroImgData;
   try{
     await api('POST','/api/store-settings',body);
     showToast('✅ Store settings saved! Customer page updates live.');
   }catch(e){showToast('❌ Failed to save store settings');}
+}
+
+// ── HERO IMAGE UPLOAD ──
+var _heroImgData = null;
+
+document.addEventListener('DOMContentLoaded',function(){
+  var heroInput = document.getElementById('heroImgInput');
+  if(heroInput){
+    heroInput.onchange = function(e){
+      var f = e.target.files[0]; if(!f) return;
+      var rd = new FileReader();
+      rd.onload = function(ev){
+        _heroImgData = ev.target.result;
+        document.getElementById('heroImgPreview').src = _heroImgData;
+        document.getElementById('heroImgPreview').style.display = 'block';
+        document.getElementById('heroImgTxt').style.display = 'none';
+        document.getElementById('heroImgClear').style.display = 'flex';
+      };
+      rd.readAsDataURL(f);
+    };
+  }
+});
+
+function clearHeroImg(){
+  _heroImgData = null;
+  document.getElementById('heroImgPreview').src = '';
+  document.getElementById('heroImgPreview').style.display = 'none';
+  document.getElementById('heroImgTxt').style.display = 'block';
+  document.getElementById('heroImgClear').style.display = 'none';
+  document.getElementById('heroImgInput').value = '';
 }
 
 // ── STORY SECTION ADMIN ──
