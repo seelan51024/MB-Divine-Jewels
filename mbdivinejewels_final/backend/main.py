@@ -12,7 +12,7 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from models import LoginRequest, ProductCreate, ProductUpdate, OrderCreate, CustomerOrderCreate, TokenResponse, UpdateStatusRequest, PaymentSettings, StoreSettings, StorySection, TestimonialsSection, GallerySection, ChangePasswordRequest
+from models import LoginRequest, ProductCreate, ProductUpdate, OrderCreate, CustomerOrderCreate, TokenResponse, UpdateStatusRequest, PaymentSettings, StoreSettings, StorySection, TestimonialsSection, GallerySection, ChangePasswordRequest, CategoryCreate
 from database import get_db, init_db
 
 app = FastAPI(title="MB Divine Jewels")
@@ -263,6 +263,43 @@ def change_password(body: ChangePasswordRequest, user=Depends(verify_token), db=
     if len(body.new_password) < 6: raise HTTPException(400,"Password too short (min 6)")
     new_hash = bcrypt.hashpw(body.new_password.encode(), bcrypt.gensalt()).decode()
     db.execute("UPDATE users SET password_hash=? WHERE email=?", (new_hash, user))
+    db.commit()
+    return {"success": True}
+
+# ── CATEGORIES ──
+@app.get("/api/public/categories")
+def get_public_categories(db=Depends(get_db)):
+    rows = db.execute("SELECT name FROM categories ORDER BY sort_order,id ASC").fetchall()
+    return [r["name"] for r in rows]
+
+@app.get("/api/categories")
+def get_categories(user=Depends(verify_token), db=Depends(get_db)):
+    rows = db.execute("SELECT id,name,sort_order FROM categories ORDER BY sort_order,id ASC").fetchall()
+    return [dict(r) for r in rows]
+
+@app.post("/api/categories", status_code=201)
+def create_category(body: CategoryCreate, user=Depends(verify_token), db=Depends(get_db)):
+    try:
+        name = body.name.strip()
+        if not name: raise HTTPException(400,"Category name required")
+        max_order = db.execute("SELECT COALESCE(MAX(sort_order),0) FROM categories").fetchone()[0]
+        cur = db.execute("INSERT INTO categories (name,sort_order) VALUES (?,?)", (name, max_order+1))
+        db.commit()
+        return {"id": cur.lastrowid, "name": name, "sort_order": max_order+1}
+    except sqlite3.IntegrityError:
+        raise HTTPException(409,"Category already exists")
+
+@app.delete("/api/categories/{cat_id}")
+def delete_category(cat_id: int, user=Depends(verify_token), db=Depends(get_db)):
+    db.execute("DELETE FROM categories WHERE id=?", (cat_id,))
+    db.commit()
+    return {"success": True}
+
+@app.put("/api/categories/{cat_id}")
+def rename_category(cat_id: int, body: CategoryCreate, user=Depends(verify_token), db=Depends(get_db)):
+    name = body.name.strip()
+    if not name: raise HTTPException(400,"Category name required")
+    db.execute("UPDATE categories SET name=? WHERE id=?", (name, cat_id))
     db.commit()
     return {"success": True}
 
