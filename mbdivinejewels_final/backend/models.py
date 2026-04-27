@@ -77,14 +77,14 @@ class StoreSettings(BaseModel):
     heroBtn: Optional[str] = "Shop Collection →"
     heroImages: Optional[list] = []      # list of base64 image strings (up to 5)
     heroImage: Optional[str] = None      # legacy single image (kept for backward compat)
-    feat1Title: Optional[str] = "Free Delivery"
+    feat1Title: Optional[str] = " 3 months Warranty"
     feat1Sub: Optional[str] = "Pan India"
-    feat2Title: Optional[str] = "Secure Payment"
+    feat2Title: Optional[str] = "secure payment"
     feat2Sub: Optional[str] = "UPI / Bank"
     feat3Title: Optional[str] = "Quality Assured"
     feat3Sub: Optional[str] = "Premium Gold Plate"
-    feat4Title: Optional[str] = "Easy Returns"
-    feat4Sub: Optional[str] = "7-Day Policy"
+    feat4Title: Optional[str] = "NO Refund"
+    feat4Sub: Optional[str] = "Only Exchange"
     footerTagline: Optional[str] = "Style, Starts Here"
     footerAddress: Optional[str] = "Tamil Nadu, India"
     whatsapp: Optional[str] = ""
@@ -114,3 +114,7 @@ class GallerySection(BaseModel):
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str
+
+class CategoryCreate(BaseModel):
+    name: str
+    sort_order: int = 0
