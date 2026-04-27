@@ -90,6 +90,11 @@ def init_db():
             id INTEGER PRIMARY KEY CHECK (id=1),
             data TEXT NOT NULL DEFAULT '{}'
         );
+        CREATE TABLE IF NOT EXISTS categories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL,
+            sort_order INTEGER DEFAULT 0
+        );
     """)
 
     # ── Safe column migrations for existing DBs ──
@@ -166,6 +171,24 @@ def init_db():
     # ── Seed gallery ──
     if not db.execute("SELECT id FROM gallery_section WHERE id=1").fetchone():
         db.execute("INSERT INTO gallery_section (id,data) VALUES (1,?)", (json.dumps({"images": []}),))
+
+    # ── Seed categories ──
+    if not db.execute("SELECT id FROM categories LIMIT 1").fetchone():
+        db.execute("INSERT OR IGNORE INTO categories (name,sort_order) VALUES (?,?)", ("Anti Tarnish Chains", 0))
+        db.execute("INSERT OR IGNORE INTO categories (name,sort_order) VALUES (?,?)", ("Chokers", 1))
+        db.execute("INSERT OR IGNORE INTO categories (name,sort_order) VALUES (?,?)", ("Earrings", 2))
+        db.execute("INSERT OR IGNORE INTO categories (name,sort_order) VALUES (?,?)", ("Nose Pins", 3))
+        db.execute("INSERT OR IGNORE INTO categories (name,sort_order) VALUES (?,?)", ("Second Studs", 4))
+        db.execute("INSERT OR IGNORE INTO categories (name,sort_order) VALUES (?,?)", ("Anklets", 5))
+        db.execute("INSERT OR IGNORE INTO categories (name,sort_order) VALUES (?,?)", ("Hand Chains", 6))
+        db.execute("INSERT OR IGNORE INTO categories (name,sort_order) VALUES (?,?)", ("Rings", 7))
+        db.execute("INSERT OR IGNORE INTO categories (name,sort_order) VALUES (?,?)", ("Charms", 8))
+        db.execute("INSERT OR IGNORE INTO categories (name,sort_order) VALUES (?,?)", ("Plain Chains", 9))
+        db.execute("INSERT OR IGNORE INTO categories (name,sort_order) VALUES (?,?)", ("Double Layer Chains", 10))
+        db.execute("INSERT OR IGNORE INTO categories (name,sort_order) VALUES (?,?)", ("Kadas", 11))
+        db.execute("INSERT OR IGNORE INTO categories (name,sort_order) VALUES (?,?)", ("Chain Bracelets", 12))
+        db.execute("INSERT OR IGNORE INTO categories (name,sort_order) VALUES (?,?)", ("Hand Cuffs", 13))
+        db.execute("INSERT OR IGNORE INTO categories (name,sort_order) VALUES (?,?)", ("Other", 14))
 
     db.commit()
     db.close()
