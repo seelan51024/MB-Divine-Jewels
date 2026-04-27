@@ -506,8 +506,8 @@ MB Divine Jewels</div>
     <div class="hero-no">💎</div>
     <div class="hero-ov"></div>
     <div class="hero-cnt">
-      <div class="hero-ey" id="heroEy">Welcome to MB Divine Jewels ✦ Made For You</div>
-      <div class="hero-ttl" id="heroTtl">Jewellery That<br>Feels Like You</div>
+      <div class="hero-ey" id="heroEy">Welcome to MB Divine Jewels</div>
+      <div class="hero-ttl" id="heroTtl">Jewellery That Feels Like You</div>
       <button class="hero-btn" id="heroBtn" onclick="document.getElementById('catBar').scrollIntoView({behavior:'smooth'})">Shop Collection →</button>
     </div>
   </section>
@@ -516,7 +516,7 @@ MB Divine Jewels</div>
   <div class="feat-bar">
     <div class="feat-item">
       <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-      <div><div class="feat-txt" id="feat1T">Free Delivery</div><div class="feat-sub" id="feat1S">Pan India</div></div>
+      <div><div class="feat-txt" id="feat1T"> 3 Months warranty</div><div class="feat-sub" id="feat1S">for all products</div></div>
     </div>
     <div class="feat-item">
       <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -528,7 +528,7 @@ MB Divine Jewels</div>
     </div>
     <div class="feat-item">
       <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg>
-      <div><div class="feat-txt" id="feat4T">Easy Returns</div><div class="feat-sub" id="feat4S">7-Day Policy</div></div>
+      <div><div class="feat-txt" id="feat4T">NO Refund</div><div class="feat-sub" id="feat4S">Only Exchange</div></div>
     </div>
   </div>
 
@@ -552,7 +552,7 @@ MB Divine Jewels</div>
     </div>
     <div class="story-txt-side">
       <div class="story-squig">〜〜〜</div>
-      <div class="story-ttl" id="storyTtl">Soft Sparkles,<br>Everyday Energy</div>
+      <div class="story-ttl" id="storyTtl">The Story Behind MB Divine Jewels</div>
       <div class="story-body" id="storyBody"><b>MB Divine Jewels</b> is all about the little details that make you feel like <em>you</em>. From minimal rings to delicate chains, every piece is designed to be elegant, effortless, and made for your daily moments.<br><br>Think jewellery you can wear from morning rituals to late-night plans — soft, timeless, and always shining with you.</div>
       <a class="story-cta" id="storyCta" href="#" onclick="document.getElementById('catBar').scrollIntoView({behavior:'smooth'});return false;">Our Story ✦</a>
     </div>
@@ -604,14 +604,14 @@ MB Divine Jewels</div>
       <div class="sec-t" style="padding-top:0;margin-bottom:4px;"><h2>Follow Our World</h2></div>
       <div class="insta-handle" id="instaHandle">@mbdivinejewels</div>
       <div class="insta-grid" id="instaGrid">
-        <div class="insta-cell">💍</div>
-        <div class="insta-cell">✨</div>
-        <div class="insta-cell">📿</div>
-        <div class="insta-cell">💜</div>
-        <div class="insta-cell">🪙</div>
-        <div class="insta-cell">💎</div>
-        <div class="insta-cell">🌸</div>
-        <div class="insta-cell">⭐</div>
+        <div class="insta-cell"></div>
+        <div class="insta-cell"></div>
+        <div class="insta-cell"></div>
+        <div class="insta-cell"></div>
+        <div class="insta-cell"></div>
+        <div class="insta-cell"></div>
+        <div class="insta-cell"></div>
+        <div class="insta-cell"></div>
       </div>
     </div>
   </section>
@@ -939,6 +939,11 @@ document.getElementById('polOv').addEventListener('click',function(e){if(e.targe
 // ── LOAD ──
 async function loadProducts(){
   try{
+    // Load categories first so CATS is dynamic
+    try{
+      var rc=await fetch('/api/public/categories');
+      if(rc.ok){ var catsData=await rc.json(); if(catsData&&catsData.length) CATS=['All'].concat(catsData); }
+    }catch(e){}
     var r=await fetch('/api/public/products');
     if(!r.ok)throw new Error();
     products=await r.json();
