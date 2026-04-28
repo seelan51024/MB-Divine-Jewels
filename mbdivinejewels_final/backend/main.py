@@ -191,8 +191,21 @@ def get_customer_orders(user=Depends(verify_token), db=Depends(get_db)):
 def update_status(order_id: str, body: UpdateStatusRequest, user=Depends(verify_token), db=Depends(get_db)):
     row = db.execute("SELECT * FROM customer_orders WHERE order_id=?", (order_id,)).fetchone()
     if not row: raise HTTPException(404, "Order not found")
-    # Stock is already reduced at order placement — no double reduction here
-    db.execute("UPDATE customer_orders SET status=? WHERE order_id=?", (body.new_status, order_id))
+
+    old_status = row["status"]
+    new_status = body.new_status
+
+    # If order is being cancelled and was NOT already cancelled,
+    # restore stock for all items in this order.
+    if new_status == "cancelled" and old_status != "cancelled":
+        items = json.loads(row["items"])
+        for item in items:
+            pid = item.get("id")
+            qty = item.get("qty", 1)
+            if pid:
+                db.execute("UPDATE products SET stock=stock+? WHERE id=?", (qty, int(pid)))
+
+    db.execute("UPDATE customer_orders SET status=? WHERE order_id=?", (new_status, order_id))
     db.commit()
     return {"success": True}
 
@@ -331,6 +344,3 @@ def dashboard_stats(user=Depends(verify_token), db=Depends(get_db)):
         "weekly_pos": [{"day":r["day"],"rev":r["rev"] or 0} for r in weekly_pos],
         "weekly_online": [{"day":r["day"],"rev":r["rev"] or 0} for r in weekly_onl],
     }
-
-
-
