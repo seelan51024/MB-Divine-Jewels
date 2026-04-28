@@ -211,6 +211,15 @@ def update_status(order_id: str, body: UpdateStatusRequest, user=Depends(verify_
 
 @app.delete("/api/customer-orders/{order_id}")
 def delete_customer_order(order_id: str, user=Depends(verify_token), db=Depends(get_db)):
+    # Restore stock if order was not already cancelled
+    row = db.execute("SELECT * FROM customer_orders WHERE order_id=?", (order_id,)).fetchone()
+    if row and row["status"] not in ("cancelled", "completed"):
+        items = json.loads(row["items"])
+        for item in items:
+            pid = item.get("id")
+            qty = item.get("qty", 1)
+            if pid:
+                db.execute("UPDATE products SET stock=stock+? WHERE id=?", (qty, int(pid)))
     db.execute("DELETE FROM customer_orders WHERE order_id=?", (order_id,))
     db.commit()
     return {"success": True}
