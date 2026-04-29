@@ -7,10 +7,10 @@ import jwt, bcrypt, sqlite3, os, json, random, string, sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
-# Ensure backend package imports work whether app is started from the workspace root or from inside backend/
-ROOT_DIR = Path(__file__).resolve().parent.parent
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
+# Ensure backend package imports work — add the backend folder itself to sys.path
+BACKEND_DIR = Path(__file__).resolve().parent
+if str(BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR))
 
 from models import LoginRequest, ProductCreate, ProductUpdate, OrderCreate, CustomerOrderCreate, TokenResponse, UpdateStatusRequest, PaymentSettings, StoreSettings, StorySection, TestimonialsSection, GallerySection, ChangePasswordRequest, CategoryCreate
 from database import get_db, init_db
@@ -149,8 +149,8 @@ def get_public_payment_settings(db=Depends(get_db)):
     row = db.execute("SELECT data FROM payment_settings WHERE id=1").fetchone()
     if not row: return {}
     d = json.loads(row["data"])
-    # Expose necessary payment details for customers
-    return {"upi": d.get("upi",""), "upiName": d.get("upiName",""), "qr": d.get("qr"), "note": d.get("note",""), "cod": d.get("cod",False), "hasBankTransfer": bool(d.get("bankAcc","")), "bankName": d.get("bankName",""), "bankAcc": d.get("bankAcc",""), "bankIFSC": d.get("bankIFSC",""), "bankBank": d.get("bankBank",""), "shippingFee": d.get("shippingFee",0), "freeShippingAbove": d.get("freeShippingAbove",0)}
+    # Don't expose full bank details publicly — just what customer needs
+    return {"upi": d.get("upi",""), "upiName": d.get("upiName",""), "qr": d.get("qr"), "note": d.get("note",""), "cod": d.get("cod",False), "hasBankTransfer": bool(d.get("bankAcc","")), "shippingFee": d.get("shippingFee",0), "freeShippingAbove": d.get("freeShippingAbove",0)}
 
 
 @app.delete("/api/products/{pid}")
@@ -211,15 +211,6 @@ def update_status(order_id: str, body: UpdateStatusRequest, user=Depends(verify_
 
 @app.delete("/api/customer-orders/{order_id}")
 def delete_customer_order(order_id: str, user=Depends(verify_token), db=Depends(get_db)):
-    # Restore stock if order was not already cancelled
-    row = db.execute("SELECT * FROM customer_orders WHERE order_id=?", (order_id,)).fetchone()
-    if row and row["status"] not in ("cancelled", "completed"):
-        items = json.loads(row["items"])
-        for item in items:
-            pid = item.get("id")
-            qty = item.get("qty", 1)
-            if pid:
-                db.execute("UPDATE products SET stock=stock+? WHERE id=?", (qty, int(pid)))
     db.execute("DELETE FROM customer_orders WHERE order_id=?", (order_id,))
     db.commit()
     return {"success": True}
