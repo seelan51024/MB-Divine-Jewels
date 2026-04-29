@@ -896,7 +896,9 @@ function _hideAllPages(){
 }
 function showShop(){curPage='shop';document.getElementById('shopPg').classList.remove('hide');['cartPg','coPg','sucPg','myOrdPg'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('show');});window.scrollTo(0,0);}
 function showCart(){curPage='cart';renderCartPage();_hideAllPages();document.getElementById('shopPg').classList.add('hide');document.getElementById('cartPg').classList.add('show');window.scrollTo(0,0);}
-function showCheckout(){curPage='checkout';renderCoSummary();renderPaySection();_hideAllPages();document.getElementById('shopPg').classList.add('hide');document.getElementById('coPg').classList.add('show');window.scrollTo(0,0);
+function showCheckout(){curPage='checkout';renderCoSummary();_hideAllPages();document.getElementById('shopPg').classList.add('hide');document.getElementById('coPg').classList.add('show');window.scrollTo(0,0);
+  // Always re-fetch payment settings when checkout opens to ensure latest data is shown
+  fetch('/api/public/payment-settings').then(function(r){if(r.ok)return r.json();}).then(function(d){if(d){paySettings=d;}renderPaySection();}).catch(function(){renderPaySection();});
   // Update shipping fee when city changes
   var cityInp=document.getElementById('coCity');
   if(cityInp&&!cityInp._shipListener){cityInp._shipListener=true;cityInp.addEventListener('input',renderCoSummary);}
@@ -1015,12 +1017,14 @@ async function loadProducts(){
         }).join('');
       }
     }
-    // Load payment settings
-    var pr=await fetch('/api/public/payment-settings');
-    if(pr.ok) paySettings=await pr.json();
   }catch(e){
     document.getElementById('prodGrid').innerHTML='<div class="empty"><div class="ei">💎</div><p style="font-family:\'Cormorant Garamond\',serif;font-size:18px;">Could not load products. Please refresh.</p></div>';
   }
+  // Load payment settings separately so it always works even if products fail
+  try{
+    var pr=await fetch('/api/public/payment-settings');
+    if(pr.ok) paySettings=await pr.json();
+  }catch(e){ console.warn('Payment settings load failed',e); }
 }
 
 function buildCats(){
@@ -1301,6 +1305,18 @@ function renderPaySection(){
   var s=paySettings;
   var html='';
 
+  // If paySettings not yet loaded, show loading and retry
+  if(!s || Object.keys(s).length===0){
+    document.getElementById('payContent').innerHTML='<div style="font-size:12px;color:var(--textm);padding:10px;">Loading payment options…</div>';
+    var proofSec=document.getElementById('payProofSection');
+    if(proofSec) proofSec.style.display='none';
+    // Retry fetch after 1 second
+    setTimeout(function(){
+      fetch('/api/public/payment-settings').then(function(r){if(r.ok)return r.json();}).then(function(d){if(d&&d.upi){paySettings=d;renderPaySection();}}).catch(function(){});
+    },1000);
+    return;
+  }
+
   // UPI payment
   if(s.upi){
     html+=
@@ -1317,23 +1333,6 @@ function renderPaySection(){
       '</div>';
   }
 
-  // Bank transfer
-  if(s.hasBankTransfer){
-    html+=
-      '<div class="upi-box" id="payBank" style="cursor:pointer;border:2px solid '+(selectedPay==='bank'?'var(--lav-500)':'var(--lav-200)')+';margin-top:10px;" onclick="selPay(\'bank\')">'+
-        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'+
-          '<input type="radio" name="payMethod" '+(selectedPay==='bank'?'checked':'')+' style="accent-color:var(--lav-600);width:16px;height:16px;"/>'+
-          '<span style="font-size:12px;font-weight:600;color:var(--text);">Pay via Bank Transfer</span>'+
-        '</div>'+
-        '<div class="upi-id">Account: '+s.bankAcc+'</div>'+
-        '<div class="upi-name">Name: '+s.bankName+'</div>'+
-        '<div class="upi-name">Bank: '+s.bankBank+'</div>'+
-        '<div class="upi-name">IFSC: '+s.bankIFSC+'</div>'+
-        '<button class="upi-copy-btn" onclick="copyBankDetails(event)">📋 Copy Details</button>'+
-        '<div style="font-size:11px;color:var(--textm);margin-top:10px;">Amount to pay: <strong style="color:var(--lav-700);font-size:14px;">₹'+grandTotal.toLocaleString('en-IN')+'</strong></div>'+
-      '</div>';
-  }
-
   // COD removed — online payment only
 
   // Payment note
@@ -1341,13 +1340,13 @@ function renderPaySection(){
     html+='<div class="pay-note">📌 '+s.note+'</div>';
   }
 
-  if(!s.upi && !s.hasBankTransfer){
+  if(!s.upi){
     html='<div style="font-size:13px;color:var(--textm);padding:10px;">Payment details not configured yet. Please contact us.</div>';
   }
   document.getElementById('payContent').innerHTML=html;
   // Show proof section for online payment
   var proofSec=document.getElementById('payProofSection');
-  if(proofSec) proofSec.style.display=(s.upi || s.hasBankTransfer)?'block':'none';
+  if(proofSec) proofSec.style.display=s.upi?'block':'none';
 }
 function selPay(m){
   selectedPay=m;
@@ -1390,16 +1389,6 @@ function copyUPI(e){
     toast('UPI: '+(s.upi||''));
   }
 }
-function copyBankDetails(e){
-  e.stopPropagation();
-  var s=paySettings;
-  var details = 'Account: ' + s.bankAcc + '\nName: ' + s.bankName + '\nBank: ' + s.bankBank + '\nIFSC: ' + s.bankIFSC;
-  if(navigator.clipboard){
-    navigator.clipboard.writeText(details).then(function(){toast('✅ Bank details copied!');}).catch(function(){toast(details);});
-  }else{
-    toast(details);
-  }
-}
 
 function validateForm(){
   var fn=document.getElementById('coFN').value.trim(),ln=document.getElementById('coLN').value.trim();
@@ -1420,12 +1409,6 @@ function validateForm(){
       toast('⚠️ Please enter Transaction ID or upload payment screenshot');return null;
     }
   }
-  if(selectedPay==='bank'&&paySettings.hasBankTransfer){
-    var txn=document.getElementById('payTxnId')?document.getElementById('payTxnId').value.trim():'';
-    if(!txn&&!_proofImgData){
-      toast('⚠️ Please enter Transaction ID or upload payment screenshot');return null;
-    }
-  }
   return{name:fn+' '+ln,phone:ph,email:em,address:st+(document.getElementById('coSt2').value.trim()?' '+document.getElementById('coSt2').value.trim():'')+', '+ci+', '+sta+' - '+pin,note:document.getElementById('coNote').value.trim()};
 }
 
@@ -1439,12 +1422,7 @@ async function placeOrder(){
   var h=now.getHours(),m=now.getMinutes(),tm=(h%12||12)+':'+(m<10?'0':'')+m+(h<12?' AM':' PM');
   var btn=document.getElementById('placeBtn');btn.textContent='Placing Order…';btn.disabled=true;
   var txnId=document.getElementById('payTxnId')?document.getElementById('payTxnId').value.trim():'';
-  var payNote = '';
-  if(selectedPay === 'upi'){
-    payNote = 'UPI Payment - ' + paySettings.upi + (txnId ? ' | Txn: ' + txnId : '');
-  }else if(selectedPay === 'bank'){
-    payNote = 'Bank Transfer - Account: ' + paySettings.bankAcc + (txnId ? ' | Txn: ' + txnId : '');
-  }
+  var payNote='UPI Payment - '+paySettings.upi+(txnId?' | Txn: '+txnId:'');
   try{
     var r=await fetch('/api/public/orders',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({customer_name:form.name,customer_phone:form.phone,customer_address:form.address,customer_note:(form.note||'')+(payNote?'\nPayment: '+payNote:''),items:items,total:window._currentGrandTotal||tot,shipping_fee:window._currentShipFee||0,payment_method:selectedPay,payment_proof:_proofImgData,payment_txn_id:txnId,time:dt+' · '+tm})});
@@ -1452,15 +1430,9 @@ async function placeOrder(){
     if(!r.ok){toast('❌ '+(d.detail||'Order failed'));btn.textContent='PLACE ORDER';btn.disabled=false;return;}
     cart={};updateUI();
     document.getElementById('sucOid').textContent=d.order_id;
-    var paymentInfo = '';
-    if(selectedPay === 'upi'){
-      paymentInfo = 'Payment: <strong>UPI — '+paySettings.upi+'</strong><br><br>';
-    }else if(selectedPay === 'bank'){
-      paymentInfo = 'Payment: <strong>Bank Transfer — '+paySettings.bankAcc+'</strong><br><br>';
-    }
     document.getElementById('sucMsg').innerHTML=
       'Your order has been placed! 🎉<br><br>'+
-      paymentInfo +
+      'Payment: <strong>UPI — '+paySettings.upi+'</strong><br><br>'+
       'We\'ll contact you at <strong>+91 '+form.phone+'</strong> to confirm.<br><br>'+
       'Thank you for choosing MB Divine Jewels! 💎';
     document.getElementById('shopPg').classList.add('hide');
