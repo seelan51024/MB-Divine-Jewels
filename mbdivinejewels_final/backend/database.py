@@ -3,7 +3,7 @@ from pathlib import Path
 from contextlib import contextmanager
 
 import os as _os
-_db_dir = _os.getenv("DB_DIR", str(Path(__file__).parent.parent / "database"))
+_db_dir = _os.getenv("DB_DIR", str(Path(__file__).parent.parent / "data"))
 DB_PATH = Path(_db_dir) / "mbdivine.db"
 
 def _connect():
